@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>地图框选</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+        html{height:100%}
+        body{height:100%;margin:0px;padding:0px}
+        #container{height:100%}
+		ul li {list-style: none;}
+		 .drawing-panel {
+		      z-index: 999;
+		      position: fixed;
+		      bottom: 3.5rem;
+		      margin-left: 2.5rem;
+		      padding-left: 0;
+		      border-radius: .25rem;
+		      height: 47px;
+		      box-shadow: 0 2px 6px 0 rgba(27, 142, 236, 0.5);
+		  }
+		.bmap-btn {
+		      border-right: 1px solid #d2d2d2;
+		      float: left;
+		      width: 64px;
+		      height: 100%;
+		      background-image: url(https://api.map.baidu.com/library/DrawingManager/1.4/src/bg_drawing_tool.png);
+		      cursor: pointer;
+		  }
+		 .drawing-panel .bmap-marker {
+		      background-position: -65px 0;
+		  }
+		.drawing-panel .bmap-polyline {
+		      background-position: -195px 0;
+		  }
+		  .drawing-panel .bmap-rectangle {
+		      background-position: -325px 0;
+		  }
+		  .drawing-panel .bmap-polygon {
+		      background-position: -260px 0;
+		  }
+		  .drawing-panel .bmap-circle {
+		      background-position: -130px 0;
+		  }
+    </style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?type=webgl&v=2.0&ak=E2HAnyiNCp76pF8l5wptCpYj8W4zq8xc"></script>
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+	<link href="https://mapopen.cdn.bcebos.com/github/BMapGLLib/DrawingManager/src/DrawingManager.min.css" rel="stylesheet">
+	<script type="text/javascript" src="https://mapopen.bj.bcebos.com/github/BMapGLLib/DrawingManager/src/DrawingManager.min.js"></script>
+	<script src="./static/WorldwideIGS-Rinex3_01.json"></script>
+	<script src="./static/WorldwideIGS-Rinex3_02.json"></script>
+</head>
+<body>
+	<ul class = "drawing-panel">
+		<li class="bmap-btn bmap-polyline" id="polyline" onclick="drawline(this)"></li>
+	    <li class="bmap-btn bmap-rectangle" id="rectangle" onclick="draw(this)"></li>
+	    <li class="bmap-btn bmap-polygon" id="polygon" onclick="draw(this)"></li>
+	    <li class="bmap-btn bmap-circle" id="circle" onclick="draw(this)"></li>
+	</ul>
+    <div id="container"></div>
+    <script type="text/javascript">
+		var markers01 = [];
+		var selectedSites = [];
+		var markers02 = [];
+
+		var blackIcon = new BMapGL.Icon("https://img13.360buyimg.com/ddimg/jfs/t1/200427/21/13874/10912/616fc236E6eae1823/a03132acdd95c2cb.png", new BMapGL.Size(23, 25), {anchor: new BMapGL.Size(10, 25),});
+		var redIcon = new BMapGL.Icon("https://img11.360buyimg.com/ddimg/jfs/t1/6454/25/14042/10021/60d03d63E06c781a8/64150acb36a947dc.png", new BMapGL.Size(23, 25), {anchor: new BMapGL.Size(10, 25),});
+		var blueIcon = new BMapGL.Icon("https://img13.360buyimg.com/ddimg/jfs/t1/205169/36/11645/2903/616fc92eE9e7d7c4f/ec973bcf7c80fc66.png", new BMapGL.Size(17, 18), {anchor: new BMapGL.Size(6, 21),});
+		var pinkIcon = new BMapGL.Icon("https://img11.360buyimg.com/ddimg/jfs/t1/171264/31/22572/2911/616fcba5E1fc368bf/6f03437710552e70.png", new BMapGL.Size(17, 18), {anchor: new BMapGL.Size(6, 21),});
+		
+		
+        var map = new BMapGL.Map("container",{
+            minZoom: 0,
+            maxZoom: 25,
+			viewMode:'3D' // 地图模式
+        });
+		map.centerAndZoom('宝鸡市', 4.9); // 初始化地图,设置中心点坐标和地图级别
+	    map.enableScrollWheelZoom(true); // 缩放功能 开启
+		map.enableDragging();
+		
+		
+		//  图例
+		var cr = new BMapGL.CopyrightControl({
+			anchor: BMAP_ANCHOR_BOTTOM_RIGHT,
+			offset: new BMapGL.Size(0, 0)
+		});   //设置版权控件位置
+		map.addControl(cr); //添加版权控件
+		var bs = map.getBounds();   //返回地图可视区域
+		cr.addCopyright({
+			id: 1, 
+			content: "<img src='https://s3.bmp.ovh/imgs/2021/12/c3a14899c51dcd42.jpg' width='410px' height='50px'/><a href='#' style='font-size:16px;color:#000'></a>", 
+			bounds: bs,
+		});
+		
+		
+		var styleOptions = {
+		    strokeColor: '#5E87DB',   // 边线颜色
+		    fillColor: '#5E87DB',     // 填充颜色。当参数为空时，圆形没有填充颜色
+		    strokeWeight: 2,          // 边线宽度，以像素为单位
+		    strokeOpacity: 1,         // 边线透明度，取值范围0-1
+		    fillOpacity: 0.2          // 填充透明度，取值范围0-1
+		};
+		var labelOptions = {
+		    borderRadius: '2px',
+		    background: '#FFFBCC',
+		    border: '1px solid #E1E1E1',
+		    color: '#703A04',
+		    fontSize: '12px',
+		    letterSpacing: '0',
+		    padding: '5px'
+		};
+		
+		// 实例化鼠标绘制工具
+		var drawingManager = new BMapGLLib.DrawingManager(map, {
+			enableCalculate: true,  // 绘制是否进行测距测面
+			circleOptions: styleOptions,     // 圆的样式
+		    polylineOptions: styleOptions,   // 线的样式
+		    polygonOptions: styleOptions,    // 多边形的样式
+		    rectangleOptions: styleOptions,  // 矩形的样式
+		    labelOptions: labelOptions,      // label样式
+		});
+		// 实例化鼠标绘制工具
+		var drawingManagerLine = new BMapGLLib.DrawingManager(map, {
+			enableCalculate: true,  // 绘制是否进行测距测面
+		    polylineOptions: styleOptions,   // 线的样式
+		    // labelOptions: labelOptions,      // label样式
+		});
+		
+		
+		function overlaycomplete(e){
+		    var shape = e.overlay;
+		    var bounds = shape.getBounds();
+		
+		    for(var i=0; i<markers01.length; i++){
+		        var marker = markers01[i];
+		        if(bounds.containsPoint(marker.getPosition())){
+		            marker.setIcon(redIcon);
+		            var title01 = marker.getLabel().getContent();
+		            if(selectedSites.indexOf(title01) == -1){
+		                selectedSites.push(title01);
+		            }
+		        }
+		    }
+			
+			for(var j=0; j<markers02.length; j++){
+			    var marker = markers02[j];
+			    if(bounds.containsPoint(marker.getPosition())){
+			        marker.setIcon(pinkIcon);
+			        var title02 = marker.getLabel().getContent();
+			        if(selectedSites.indexOf(title02) == -1){
+			            selectedSites.push(title02);
+			        }
+			    }
+			}
+			var diatence_long = parseFloat(e.calculate);
+			diatence_long = diatence_long / 1000000;
+			diatence_long = Math.ceil(diatence_long); 
+			alert("Area: about "+diatence_long+" square kilometer");
+			// 输出选中列表
+			console.log(selectedSites)
+			$.ajax({
+				url:"/IGSajax",
+				type:"post",
+				contentType:"application/json;charset=UTF-8",
+				dataType:"json",
+				data:JSON.stringify({name:selectedSites}),
+				success:function(){
+					pass
+				},error:function(){
+					pass
+				}
+			}
+			)
+		}
+		
+		function draw(e) {
+		    var arr = document.getElementsByClassName('bmap-btn');
+		    for(var i = 0; i<arr.length; i++) {
+		        arr[i].style.backgroundPositionY = '0';
+		    }
+		    e.style.backgroundPositionY = '-52px';
+		    switch(e.id) {
+		        case 'marker': {
+		            var drawingType = BMAP_DRAWING_MARKER;
+		            break;
+		        }
+		        case 'rectangle': {
+		            var drawingType = BMAP_DRAWING_RECTANGLE;
+		            break;
+		        }
+		        case 'polygon': {
+		            var drawingType = BMAP_DRAWING_POLYGON;
+		            break;
+		        }
+		        case 'circle': {
+		            var drawingType = BMAP_DRAWING_CIRCLE;
+		            break;
+		        }
+		    }
+		    // 进行绘制
+		    if (drawingManager._isOpen && drawingManager.getDrawingMode() === drawingType) {
+		        drawingManager.close();
+		    } else {
+		        drawingManager.setDrawingMode(drawingType);
+		        drawingManager.open();
+		    }
+		};
+		
+		// 绘制完成后获取相关的信息(面积等)
+		
+		drawingManager.addEventListener('overlaycomplete', overlaycomplete);
+		
+		
+		function drawline(e) {
+		    var arr = document.getElementsByClassName('bmap-btn');
+		    for(var i = 0; i<arr.length; i++) {
+		        arr[i].style.backgroundPositionY = '0';
+		    }
+		    e.style.backgroundPositionY = '-52px';
+		    switch(e.id) {
+		        case 'marker': {
+		            var drawingType = BMAP_DRAWING_MARKER;
+		            break;
+		        }
+		        case 'polyline': {
+		            var drawingType = BMAP_DRAWING_POLYLINE;
+		            break;
+		        }
+		    }
+		 //    // 进行绘制
+		 //    if (drawingManagerLine._isOpen && drawingManagerLine.getDrawingMode() === drawingType) {
+		 //        drawingManagerLine.close();
+		 //    } else {
+		 //        drawingManagerLine.setDrawingMode(drawingType);
+		 //        drawingManagerLine.open();
+		 //    }
+			
+			var arr = document.getElementsByClassName('bmap-btn');
+			for(var j = 0; j<arr.length; j++) {
+			    arr[j].style.backgroundPositionY = '0';
+			}
+			e.style.backgroundPositionY = '-52px';
+			switch(e.id) {
+			    case 'marker': {
+			        var drawingType = BMAP_DRAWING_MARKER;
+			        break;
+			    }
+			    case 'polyline': {
+			        var drawingType = BMAP_DRAWING_POLYLINE;
+			        break;
+			    }
+			}
+			
+			// 进行绘制
+			if (drawingManagerLine._isOpen && drawingManagerLine.getDrawingMode() === drawingType) {
+			    drawingManagerLine.close();
+			} else {
+			    drawingManagerLine.setDrawingMode(drawingType);
+			    drawingManagerLine.open();
+			}
+		};
+		
+		// 绘制完成后获取相关的长度
+		drawingManagerLine.addEventListener('overlaycomplete', function(e) {
+			var diatence_long = parseFloat(e.calculate);
+			diatence_long = diatence_long / 1000;
+			diatence_long = Math.ceil(diatence_long); 
+		    alert("Length: about "+diatence_long+" kilometer");
+		});
+		
+		
+		var mapType2 = new BMapGL.MapTypeControl({ mapTypes: [BMAP_NORMAL_MAP, BMAP_HYBRID_MAP] });
+		//添加地图类型和缩略图
+		map.addControl(mapType2);          //2D图，卫星图
+
+		// 判断浏览器是否支持海量数据加载
+		if (document.createElement('canvas').getContext){
+			var points = [];
+			for (var i = 0; i < data1.length; i++) {
+				var single_point  = new BMapGL.Point(data1[i][1], data1[i][2]);
+				var label01 = new BMapGL.Label(data1[i][0], {offset:new BMapGL.Size(-13, -44)});
+				var marker01 = new BMapGL.Marker(single_point, {icon: blackIcon});
+				marker01.setLabel(label01);
+				
+				marker01.addEventListener("click", function(){
+					var title01 = this.getLabel().getContent();
+					console.log(title01);
+					if(title01){
+						var index01 = selectedSites.indexOf(title01);
+						console.log(index01);
+						
+						if (index01 == -1) {
+							this.setIcon(redIcon);
+							selectedSites.push(title01);
+						} else {
+							this.setIcon(blackIcon);
+							selectedSites.splice(index01, 1);
+						}
+					}
+					// 输出选中列表
+					console.log(selectedSites)
+					$.ajax({
+						url:"/IGSajax",
+						type:"post",
+						contentType:"application/json;charset=UTF-8",
+						dataType:"json",
+						data:JSON.stringify({name:selectedSites}),
+						success:function(){
+							pass
+						},error:function(){
+							pass
+						}
+					}
+					)
+				});
+				map.addOverlay(marker01);
+				markers01.push(marker01);
+			}
+			// console.log(points);
+			
+			var points = [];
+			for (var j = 0; j < data2.length; j++) {
+				var single_point  = new BMapGL.Point(data2[j][1], data2[j][2]);
+				var label02 = new BMapGL.Label(data2[j][0], {offset:new BMapGL.Size(-13, -44)});
+				var marker02 = new BMapGL.Marker(single_point, {icon: blueIcon});
+				marker02.setLabel(label02);
+				
+				marker02.addEventListener("click", function(){
+					var title02 = this.getLabel().getContent();
+					console.log(title02);
+					if(title02){
+						var index02 = selectedSites.indexOf(title02);
+						console.log(index02);
+						
+						if (index02 == -1) {
+							this.setIcon(pinkIcon);
+							selectedSites.push(title02);
+						} else {
+							this.setIcon(blueIcon);
+							selectedSites.splice(index02, 1);
+						}
+					}
+					// 输出选中列表
+					console.log(selectedSites)
+					$.ajax({
+						url:"/IGSajax",
+						type:"post",
+						contentType:"application/json;charset=UTF-8",
+						dataType:"json",
+						data:JSON.stringify({name:selectedSites}),
+						success:function(){
+							pass
+						},error:function(){
+							pass
+						}
+					}
+					)
+				});
+				map.addOverlay(marker02);
+				markers02.push(marker02);
+			
+			}
+			// console.log(points);
+		}
+		else{
+			alert('请在chrome、safari、IE8+以上浏览器查看本示例');
+		}
+
+    </script>>
+</body>

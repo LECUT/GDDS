@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>Display Station</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <style>
+    body,
+    html,
+    #container {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        font-family: "微软雅黑";
+    }
+    </style>
+    <script src="http://api.map.baidu.com/api?type=webgl&v=2.0&ak=E2HAnyiNCp76pF8l5wptCpYj8W4zq8xc"></script>
+</head>
+<body>
+    <div id="container"></div>
+</body>
+</html>
+<script>
+var map = new BMapGL.Map("container",{
+	minZoom: 0,
+	maxZoom: 25,
+	viewMode:'3D' // 地图模式
+});
+// map.centerAndZoom('宝鸡市', 4.9); // 初始化地图,设置中心点坐标和地图级别
+map.centerAndZoom(new BMapGL.Point(125.456, 43.799), 4.9)
+map.enableScrollWheelZoom(true); // 缩放功能 开启
+map.enableDragging();
+
+// var mapType2 = new BMapGL.MapTypeControl({ mapTypes: [BMAP_NORMAL_MAP, BMAP_HYBRID_MAP] });
+// //添加地图类型和缩略图
+// map.addControl(mapType2);          //2D图，卫星图
+
+data1 = [['7110', 243.60928057271883, 32.8975962327561], ['7237', 125.45616751392055, 43.79918165090486], ['7249', 115.90405497827398, 39.61408272173478], ['7308', 139.49940347273898, 35.717326214196426], ['7328', 139.49824284444153, 35.71741230718305], ['7358', 131.02686881554078, 30.561092561784744], ['7403', 288.5390603284843, -15.52888894198078], ['7405', 287.00670377467407, -35.154627755309704], ['7821', 121.1971543687298, 31.100285729411056], ['7838', 135.94848087195413, 33.58270562523961]]
+
+for (var i = 0; i < data1.length; i++) {
+	var single_point  = new BMapGL.Marker(new BMapGL.Point(data1[i][1], data1[i][2]));
+	var label01 = new BMapGL.Label(data1[i][0], {offset:new BMapGL.Size(-13, -45)});
+	single_point.setLabel(label01);
+	map.addOverlay(single_point);
+	}
+
+</script>

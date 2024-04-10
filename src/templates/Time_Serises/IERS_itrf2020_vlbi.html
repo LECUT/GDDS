@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>Display Station</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <style>
+    body,
+    html,
+    #container {
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        font-family: "微软雅黑";
+    }
+    </style>
+    <script src="http://api.map.baidu.com/api?type=webgl&v=2.0&ak=E2HAnyiNCp76pF8l5wptCpYj8W4zq8xc"></script>
+</head>
+<body>
+    <div id="container"></div>
+</body>
+</html>
+<script>
+var map = new BMapGL.Map("container",{
+	minZoom: 0,
+	maxZoom: 25,
+	viewMode:'3D' // 地图模式
+});
+// map.centerAndZoom('宝鸡市', 4.9); // 初始化地图,设置中心点坐标和地图级别
+map.centerAndZoom(new BMapGL.Point(185.2385, 45.2556), 4.9)
+map.enableScrollWheelZoom(true); // 缩放功能 开启
+map.enableDragging();
+
+// var mapType2 = new BMapGL.MapTypeControl({ mapTypes: [BMAP_NORMAL_MAP, BMAP_HYBRID_MAP] });
+// //添加地图类型和缩略图
+// map.addControl(mapType2);          //2D图，卫星图
+
+data1 = [['1515', 243.14606043344517, 35.430378239192216], ['1516', 243.23854351209766, 35.25561452647012], ['1857', 140.66971076507684, 35.96301541023597], ['7225', 212.5451304449484, 64.99280279526236], ['7246', 138.37374254340287, 36.139182794139415], ['7324', 141.14299012597564, 39.141246134275875], ['7327', 139.49835461464585, 35.71779647815647], ['7334', 140.66706324024742, 35.962709740157], ['7345', 140.0990408266538, 36.11003153413969], ['7346', 141.85532063259504, 43.537998468447654], ['7362', 141.14321149292772, 39.141415286363134], ['7640', 287.0068710914372, -35.1549326989759]]
+
+for (var i = 0; i < data1.length; i++) {
+	var single_point  = new BMapGL.Marker(new BMapGL.Point(data1[i][1], data1[i][2]));
+	var label01 = new BMapGL.Label(data1[i][0], {offset:new BMapGL.Size(-13, -45)});
+	single_point.setLabel(label01);
+	map.addOverlay(single_point);
+	}
+
+</script>

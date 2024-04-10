@@ -1,0 +1,2 @@
+pyinstaller -w -i /root/Desktop/gdds/lib/logo/logo.ico GDDS.py (linux)
+pyinstaller -w -i ./lib/logo/logo.ico GDDS.py（window）
