@@ -1,5 +1,3 @@
-# BDViSim
-an web application platform for visual simulation of the BeiDou Navigation Satellite System
 <!--
  * @Author: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
  * @Date: 2024-03-06 15:48:26
